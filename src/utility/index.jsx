@@ -1,6 +1,5 @@
 import heroes from 'dotaconstants/build/heroes.json';
 import itemIds from 'dotaconstants/build/item_ids.json';
-import items from 'dotaconstants/build/items.json';
 import patch from 'dotaconstants/build/patch.json';
 import xpLevel from 'dotaconstants/build/xp_level.json';
 import curry from 'lodash/fp/curry';
@@ -23,6 +22,8 @@ import {
 } from '../components/Visualizations';
 import store from '../store';
 import config from '../config';
+
+const items = (await import('dotaconstants/build/items.json')).default;
 
 const second = 1;
 const minute = second * 60;
@@ -188,7 +189,7 @@ const getTitle = (row, col, heroName) => {
   return <TableLink to={`/heroes/${row[col.field]}`}>{heroName}</TableLink>;
 };
 
-export const getHeroImageUrl = (heroId, imageSizeSuffix) => {
+export const getHeroImageUrl = (heroId, _) => {
   const imageUrl = heroes[heroId] && config.VITE_IMAGE_CDN + heroes[heroId].img;
   return imageUrl;
 };
@@ -343,9 +344,9 @@ export const getTeamLogoUrl = (logoUrl) => {
     return '';
   }
   // Use proxy layer to serve team logos
-  if (logoUrl.indexOf('/ugc') !== -1) {
-    return `${config.VITE_API_HOST}${logoUrl.substr(logoUrl.indexOf('/ugc'))}`;
-  }
+  // if (logoUrl.indexOf('/ugc') !== -1) {
+  //   return `${config.VITE_API_HOST}${logoUrl.substr(logoUrl.indexOf('/ugc'))}`;
+  // }
   return logoUrl;
 };
 
@@ -505,7 +506,7 @@ export function compileLevelOneStats(hero) {
 
 
   const [agiValue, strValue, intValue] = [hero.base_agi, hero.base_str, hero.base_int];
-  const primaryAttrValue = primary_attr === "all" ? agiValue + strValue + intValue : hero[`base_${primary_attr}` ]
+  const primaryAttrValue = primary_attr === "all" ? agiValue + strValue + intValue : hero[`base_${primary_attr}`]
 
   return {
     ...hero,
@@ -662,6 +663,7 @@ export function displayHeroId(row, col, field, showGuide = false, guideUrl, guid
     <TableHeroImage
       parsed={row.version}
       heroID={heroId}
+      facet={row.hero_variant}
       title={getTitle(row, col, heroName)}
       subtitle={getSubtitle(row)}
       heroName={heroName}
@@ -887,14 +889,21 @@ export function getDOY(date) {
 }
 
 // find and style/highlight number values in tooltip descriptions
-export function styleValues(el) {
+export function styleValues(el, style = 'font-weight:500;color:#F5F5F5') {
   if (el) {
     const element = el;
     element.innerHTML = el.innerHTML
       .replace(/(,)(\d)/gm, ' / $2')
-      .replace(/\+?\s?-?\s?\d+\.?%?\d*%?x?/gm, '<span style="font-weight:500;color:#F5F5F5">$&</span>');
+      .replace(/\s?-?\s?\d+\.?%?\d*%?x?/gm, `<span style=${style}>$&</span>`);
   }
   return null;
+}
+
+export function formatValues(values) {
+  if (Array.isArray(values)) {
+    return values.filter(value => value).join(' / ');
+  }
+  return values;
 }
 
 // handles table cell custom and default styling

@@ -3,7 +3,6 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import ReactTooltip from 'react-tooltip';
 import nanoid from 'nanoid';
-import items from 'dotaconstants/build/items.json';
 import styled from 'styled-components';
 import ItemTooltip from './../ItemTooltip/index';
 import constants from '../constants';
@@ -13,6 +12,7 @@ import config from '../../config';
 const abilityIds = (await import('dotaconstants/build/ability_ids.json')).default;
 const abilities = (await import('dotaconstants/build/abilities.json')).default;
 const neutralAbilities = (await import('dotaconstants/build/neutral_abilities.json')).default;
+const items = (await import('dotaconstants/build/items.json')).default;
 
 const getInflictorImage = (inflictor) => {
   if (inflictor.includes('recipe')) {
@@ -69,17 +69,18 @@ display: inline-block;
   &.backpack {
     height: 10px;
     white-space: nowrap;
-    
-    object, img {
+
+    img {
       height: 18px;
+      width: 25px;
     }
   }
-  &.neutral {    
-    > object, > img {
+  &.neutral {
+    > img {
       height: 30px;
       width: 30px;
-      border-radius: 15px;
       object-fit: cover;
+      border-radius: 15px;
       position: relative;
       bottom: 1px;
     }
@@ -168,18 +169,23 @@ class InflictorWithValue extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = { showTooltip: false };
+    this.state = { showTooltip: false, imageError: false };
   }
   setShowTooltip = () => {
     if (!this.state.showTooltip) {
       this.setState({ showTooltip: true });
     }
   };
+  setImageError = (state) => {
+    this.setState({ imageError: state });
+  }
 
   render() {
     const {
       inflictor, value, type, ptooltip, abilityId, strings, charges,
     } = this.props;
+
+    const { imageError } = this.state;
 
     const resolvedInflictor = (abilityId && abilityIds && abilityIds[abilityId]) || String(inflictor);
     if (resolvedInflictor) {
@@ -215,6 +221,8 @@ class InflictorWithValue extends React.Component {
         tooltip = ptooltip;
       }
 
+      const fallbackImage = '/assets/images/Dota2Logo.svg';
+
       return (
         <StyledDiv>
           <div
@@ -224,41 +232,49 @@ class InflictorWithValue extends React.Component {
             onMouseEnter={this.setShowTooltip}
           >
             {(!type || type === 'purchase' || type === 'backpack' || type === 'neutral') &&
-            <object data={image} height="27px" type="image/png">
-              <img src="/assets/images/Dota2Logo.svg" alt="Dota 2 Logo" style={{ filter: 'grayscale(60%)', height: '27px' }} />
-            </object>}
+              <img
+                src={imageError ? fallbackImage : image}
+                alt={imageError ? "Dota 2 Logo" : ""}
+                height="27px"
+                style={{
+                  filter: imageError ? 'grayscale(60%)' : null
+                }}
+                width={(ability || imageError) ? '27px' : '37px'}
+                onError={() => this.setImageError(true)}
+              />
+            }
             {type === 'buff' &&
-            <div
-              className="buff"
-              style={{
-                backgroundImage: `url(${image})`,
-              }}
-            />
-          }
+              <div
+                className="buff"
+                style={{
+                  backgroundImage: `url(${image})`,
+                }}
+              />
+            }
             {!type && <div className="overlay">{value}</div>}
             {type === 'buff' &&
-            <div className="buffOverlay">
-              {value > 0 && value}
-            </div>
-          }
+              <div className="buffOverlay">
+                {value > 0 && value}
+              </div>
+            }
             {charges &&
               <div className="chargeOverlay">
                 {charges}
               </div>
-          }
-            {type === 'backpack' &&
-            <div className="backpackOverlay">
-              <span>{value}</span>
-            </div>
-          }
-            {tooltip &&
-            <div className="tooltip">
-              {this.state.showTooltip &&
-              <ReactTooltip id={ttId} effect="solid" place="left">
-                {tooltip}
-              </ReactTooltip>
             }
-            </div>}
+            {type === 'backpack' &&
+              <div className="backpackOverlay">
+                <span>{value}</span>
+              </div>
+            }
+            {tooltip &&
+              <div className="tooltip">
+                {this.state.showTooltip &&
+                  <ReactTooltip id={ttId} effect="solid" place="left">
+                    {tooltip}
+                  </ReactTooltip>
+                }
+              </div>}
           </div>
         </StyledDiv>
       );
